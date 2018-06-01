@@ -1,12 +1,12 @@
 const http = require("http");
-const PORTS = (process.env.PORTS).split(',') || [];
+const PORTS = process.env.PORTS.split(",") || [];
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer().listen(PORT);
 
 let portIndex = 0;
 
-function roundRobinPort () {
+function roundRobinPort() {
     const port = PORTS[portIndex];
     portIndex++;
 
@@ -17,21 +17,27 @@ function roundRobinPort () {
     return port;
 }
 
-function randomPort () {
+function randomPort() {
     return PORTS[Math.floor(Math.random() * (PORTS.length - 1))];
 }
 
-server.on("request", (req, res) => {
-    const connector = http.request(
+server.on("request", (request, response) => {
+    const proxy = http.request(
         {
-            host: 'localhost',
+            host: "localhost",
             port: roundRobinPort(),
-            path: req.url,
-            method: req.method,
-            headers: req.headers
+            path: request.url,
+            method: request.method,
+            headers: request.headers
         },
-        resp => resp.pipe(res)
+        forwardedResponse => forwardedResponse.pipe(response)
     );
 
-    req.pipe(connector);
+    request.pipe(proxy);
+
+    proxy.on("error", error => {
+        response.writeHead(503);
+        response.write("Service unavailable.")
+        response.end();
+    });
 });
