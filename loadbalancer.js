@@ -1,8 +1,11 @@
 const http = require("http");
-const PORTS = process.env.PORTS.split(",") || [];
+const PORTS = process.env.PORTS ? process.env.PORTS.split(",") : [];
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer().listen(PORT);
+server.on('error', (error) => {
+    console.log(error.toString());
+})
 
 let portIndex = 0;
 
